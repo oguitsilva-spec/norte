@@ -173,6 +173,16 @@ export async function handleMetaCallback(
 
     step = "listar_contas";
     const found = await discoverAdAccounts(cfg, workspaceId, connectionId, token);
+    // Reconexão: contas que já estavam selecionadas voltam a sincronizar na hora.
+    const selected = await db
+      .select({ id: schema.adAccounts.id })
+      .from(schema.adAccounts)
+      .where(and(eq(schema.adAccounts.connectionId, connectionId), eq(schema.adAccounts.isSelected, true)));
+    if (selected.length)
+      await db
+        .update(schema.syncJobs)
+        .set({ enabled: true, nextRunAt: new Date(), consecutiveFailures: 0 })
+        .where(inArray(schema.syncJobs.adAccountId, selected.map((a) => a.id)));
     log.info("meta_connected", { workspaceId, connectionId, tokenType, accounts: found });
     return { ok: true, workspaceId, connectionId, accountsFound: found };
   } catch (e) {

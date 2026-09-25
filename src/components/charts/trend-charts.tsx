@@ -71,7 +71,7 @@ export function SpendRevenueChart({ data, currency, revenueTracked }: { data: Se
         />
         <ComparisonToggle on={prev} set={setPrev} />
       </div>
-      <div className="h-[260px] w-full">
+      <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--grid)" />
@@ -110,7 +110,7 @@ export function RoasChart({ data, target }: { data: SeriesPoint[]; target?: numb
   return (
     <div className="flex h-full flex-col gap-3">
       <Legend items={[{ label: "ROAS diário", color: "var(--series-1)" }, ...(target ? [{ label: `Meta ${fmtRoas(target)}`, color: "var(--ink-3)" }] : [])]} />
-      <div className="h-[260px] w-full">
+      <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--grid)" />
@@ -147,8 +147,8 @@ export function ResultsChart({ data, label, currency, costLabel }: { data: Serie
   const reduce = useReducedMotion();
   return (
     <div className="flex h-full flex-col gap-3">
-      <p className="text-[12.5px] text-ink-3">Coluna mais clara = dia em andamento (parcial).</p>
-      <div className="h-[220px] w-full">
+      <Legend items={[{ label, color: "var(--series-1)", kind: "bar" }]} />
+      <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap={2}>
             <CartesianGrid vertical={false} stroke="var(--grid)" />

@@ -20,6 +20,9 @@ Data: 24/09/2026. Nada aqui afirma prontidão para produção.
 
 Total: 53 testes Vitest e 4 testes Playwright passando.
 
+- Redesenho visual (Visão geral, Recomendações, Funis, Criativos) conferido em capturas de tela desktop (claro/escuro) e celular com dados de demonstração.
+- Recomendações de otimização com regras do Growth OS ([RECOMMENDATIONS.md](RECOMMENDATIONS.md)): testes unitários das regras e salvaguardas, teste de isolamento do status por workspace e teste E2E marcando uma recomendação como revisada.
+
 ## Implementado, mas NÃO executado contra a Meta real
 
 - Troca de code, `debug_token`, `/me/adaccounts`, insights, relatórios assíncronos e revogação usam os endpoints documentados, mas só rodaram contra a simulação. Formatos reais podem ter diferenças (por exemplo, campos de criativo ausentes em certos formatos, comportamento de `/me/permissions` para system users).
@@ -35,6 +38,7 @@ Total: 53 testes Vitest e 4 testes Playwright passando.
 5. Hospedagem do processo `worker` sempre ativo (além do web) e backups do Postgres.
 
 ## Limitações conhecidas e próximos passos sugeridos
+- Recomendações ainda não foram avaliadas com dados reais de uma conta: os limiares podem precisar de ajuste por nicho/ticket. Frequência por anúncio não é sincronizada, então “desgaste” é inferido pela queda de CTR. Remarketing é identificado pelo nome da campanha.
 
 - Uma conta de anúncios por vez nas análises (por design, para não misturar moedas). Visão consolidada exigiria política de câmbio explícita.
 - Alcance em intervalos personalizados não é consultado sob demanda (aparece "Sem dados").

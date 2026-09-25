@@ -12,9 +12,9 @@ import { cn } from "@/lib/cn";
 /* Contribuição por campanha: % do investimento × % da receita         */
 /* ------------------------------------------------------------------ */
 
-export function CampaignContribution({ rows, currency, revenueTracked, ws, qs }: { rows: Overview["campaigns"]; currency: string; revenueTracked: boolean; ws: string; qs: string }) {
-  const top = rows.slice(0, 7);
-  const rest = rows.slice(7);
+export function CampaignContribution({ rows, currency, revenueTracked, ws, qs, limit = 7 }: { rows: Overview["campaigns"]; currency: string; revenueTracked: boolean; ws: string; qs: string; limit?: number }) {
+  const top = rows.slice(0, limit);
+  const rest = rows.slice(limit);
   const other = rest.length
     ? {
         id: "other",
@@ -32,11 +32,11 @@ export function CampaignContribution({ rows, currency, revenueTracked, ws, qs }:
     <div className="flex flex-col gap-4">
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-ink-2">
         <li className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-[3px] bg-s2" />% do investimento
+          <span aria-hidden className="h-2.5 w-2.5 rounded-[3px] bg-s2" />Investimento
         </li>
         {revenueTracked ? (
           <li className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="h-2.5 w-2.5 rounded-[3px] bg-s1" />% da receita atribuída
+            <span aria-hidden className="h-2.5 w-2.5 rounded-[3px] bg-s1" />Receita atribuída
           </li>
         ) : null}
       </ul>
@@ -353,7 +353,7 @@ export function Placements({ rows, currency, revenueTracked }: { rows: Overview[
           })}
         </tbody>
       </table>
-      <p className="px-5 py-3 text-[12px] text-ink-3">Quebra por publisher_platform + platform_position no nível de campanha. Compras por posicionamento seguem a mesma atribuição; podem não somar exatamente o total da conta por arredondamento da Meta.</p>
+      <p className="px-5 py-3 text-[12px] text-ink-3">Compras por posicionamento seguem a mesma atribuição e podem não somar exatamente o total da conta.</p>
     </div>
   );
 }

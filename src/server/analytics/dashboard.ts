@@ -16,6 +16,7 @@ import {
   type FunnelMetric,
   type Insight,
 } from "@/lib/metrics/analysis";
+import { buildRecommendations } from "@/lib/metrics/recommendations";
 import type { ViewFilters } from "@/lib/filters";
 import type { WorkspaceContext } from "@/server/tenancy/access";
 import * as q from "./queries";
@@ -200,13 +201,15 @@ export async function getOverview(ctx: WorkspaceContext, acc: Account, f: ViewFi
     const range = { from: f.from, to: f.to, campaignIds: ids };
     const prevRange = { from: f.prevFrom, to: f.prevTo, campaignIds: ids };
     const tracking = trackingFromMap(acc.actionTypeMap ?? {});
-    const [current, previous, daily, prevDaily, byCampaign, byAd, adsMeta, reachCur, reachPrev, placements, savedFunnels] = await Promise.all([
+    const [current, previous, daily, prevDaily, byCampaign, byAd, prevByCampaign, prevByAd, adsMeta, reachCur, reachPrev, placements, savedFunnels] = await Promise.all([
       q.getTotals(scope, range),
       q.getTotals(scope, prevRange),
       q.getDaily(scope, range),
       q.getDaily(scope, prevRange),
       q.getByCampaign(scope, range),
       q.getByAd(scope, range),
+      q.getByCampaign(scope, prevRange),
+      q.getByAd(scope, prevRange),
       q.listAdMeta(scope),
       q.getReach(scope, f.from, f.to),
       q.getReach(scope, f.prevFrom, f.prevTo),
@@ -282,6 +285,30 @@ export async function getOverview(ctx: WorkspaceContext, acc: Account, f: ViewFi
       topAds: ranking.ranked,
     });
 
+    // Recomendações (regras do Growth OS) sobre o MESMO recorte de filtros.
+    const reconciliationDays = Number(process.env.SYNC_RECONCILIATION_DAYS ?? 7);
+    const winners = ranking.ranked
+      .filter((a) => a.tags.includes("volume") && a.tags.includes("efficiency"))
+      .map((a) => ({ id: a.id, name: a.name, campaignName: a.campaignName, explanation: a.explanation, spend: a.totals.spend }));
+    const recommendations = buildRecommendations({
+      currency: acc.currency,
+      period: { from: f.from, to: f.to },
+      previous: { from: f.prevFrom, to: f.prevTo },
+      today,
+      reconciliationDays,
+      kind,
+      tracking,
+      targets: { roas: ctx.settings.roasTarget, cpa: ctx.settings.cpaTarget },
+      account: { current, previous },
+      campaigns: campaigns
+        .filter((c) => byCampaign.has(c.id))
+        .map((c) => ({ id: c.id, name: c.name, status: c.effectiveStatus ?? c.status, group: c.group, current: byCampaign.get(c.id)!, previous: prevByCampaign.get(c.id) ?? { ...ZERO_TOTALS } })),
+      ads: adsMeta
+        .filter((a) => byAd.has(a.id) && (!ids || ids.includes(a.campaignId)))
+        .map((a) => ({ id: a.id, name: a.name, status: a.effectiveStatus ?? a.status, campaignId: a.campaignId, campaignName: campaignName.get(a.campaignId) ?? "n/d", group: groupOf.get(a.campaignId) ?? "other", current: byAd.get(a.id)!, previous: prevByAd.get(a.id) ?? { ...ZERO_TOTALS } })),
+      winners,
+    });
+
     const placementRows = placements
       .map((p) => ({ ...p, spend: Number(p.spend), impressions: Number(p.impressions), linkClicks: Number(p.linkClicks), purchases: Number(p.purchases), purchaseValue: Number(p.purchaseValue) }))
       .sort((a, b) => b.spend - a.spend);
@@ -305,6 +332,7 @@ export async function getOverview(ctx: WorkspaceContext, acc: Account, f: ViewFi
       },
       funnel: { name: funnelDef.name, custom: funnelDef.custom, ...funnel },
       insights,
+      recommendations: { ...recommendations, generatedAt: new Date().toISOString() },
       placements: placementRows,
       hasAnyData: current.rows > 0 || previous.rows > 0,
     };

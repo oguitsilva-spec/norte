@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Flask, WarningCircle, LockKey, Info } from "@phosphor-icons/react/ssr";
+import { Flask, WarningCircle, LockKey, Clock } from "@phosphor-icons/react/ssr";
+import { Hint } from "@/components/ui/hint";
 import { FilterBar } from "./filter-bar";
 import { SyncStatus } from "./sync-status";
 import type { PageData } from "@/server/page-context";
@@ -38,10 +39,10 @@ export function PageHeader({
   const { ctx, account, freshness, filters } = data;
   const ws = ctx.workspaceId;
   return (
-    <header className="flex flex-col gap-4 border-b border-line bg-page px-4 pb-5 pt-6 sm:px-8">
+    <header className="flex flex-col gap-4 border-b border-line bg-page px-4 pb-5 pt-5 sm:px-8">
       {ctx.isDemo ? (
-        <Banner tone="demo" icon={<Flask size={18} weight="fill" className="text-warn" />}>
-          <strong className="font-semibold">Modo demonstração.</strong> Todos os números desta área são fictícios e não vêm da Meta. Nada aqui se mistura com dados reais.
+        <Banner tone="demo" icon={<Flask size={16} weight="fill" className="text-warn" />}>
+          <strong className="font-semibold">Modo demonstração:</strong> números fictícios, que não vêm da Meta.
         </Banner>
       ) : null}
       {freshness?.stale ? (
@@ -67,7 +68,7 @@ export function PageHeader({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-[24px] font-semibold tracking-[-0.025em] text-ink sm:text-[26px]">{title}</h1>
-          {description ? <p className="mt-1 max-w-[70ch] text-[14px] text-ink-2">{description}</p> : null}
+          {description ? <p className="mt-1 max-w-[70ch] text-[13.5px] text-ink-3">{description}</p> : null}
         </div>
         {account && freshness ? <SyncStatus ws={ws} accountId={account.id} timezone={account.timezone} freshness={freshness} isDemo={ctx.isDemo} /> : null}
       </div>
@@ -86,26 +87,23 @@ export function PageHeader({
             campaignId={filters.campaign}
             objective={filters.objective}
           />
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-ink-3">
-            <span>
-              Moeda <span className="font-medium text-ink-2">{account.currency}</span>
-            </span>
-            <span aria-hidden>·</span>
-            <span>
-              Fuso <span className="font-medium text-ink-2">{timezoneLabel(account.timezone)}</span>
-            </span>
-            <span aria-hidden>·</span>
+          <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-ink-3">
             <span className="inline-flex items-center gap-1">
-              Atribuição <span className="font-medium text-ink-2">configuração de cada conjunto (padrão Meta)</span>
-              <Link href={`/w/${ws}/metricas#atribuicao`} aria-label="Sobre atribuição" className="text-ink-3 hover:text-ink">
-                <Info size={14} />
-              </Link>
+              {account.currency} · {timezoneLabel(account.timezone)}
+              <Hint label="Moeda, fuso e atribuição">
+                <p>
+                  Valores em <strong className="font-medium text-ink">{account.currency}</strong>, datas no fuso da conta ({timezoneLabel(account.timezone)}).
+                </p>
+                <p className="mt-1.5">Compras e receita usam a atribuição configurada em cada conjunto (padrão da Meta) e podem diferir das vendas do seu checkout.</p>
+                <Link href={`/w/${ws}/metricas#atribuicao`} className="mt-1.5 inline-block font-medium text-accent-text hover:underline">
+                  Como as métricas são calculadas
+                </Link>
+              </Hint>
             </span>
             {filters.includesToday ? (
-              <>
-                <span aria-hidden>·</span>
-                <span className="font-medium text-warn">Hoje ainda está em andamento: números parciais</span>
-              </>
+              <span className="inline-flex items-center gap-1 font-medium text-warn">
+                <Clock size={13} weight="bold" /> hoje ainda em andamento
+              </span>
             ) : null}
           </p>
         </div>

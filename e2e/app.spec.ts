@@ -22,14 +22,25 @@ test("fluxo: cadastro → demonstração → painel com KPIs e selo de demo", as
   await signUp(page, "Ana");
   await expect(page.getByRole("heading", { name: /Integração com a Meta ainda não configurada|Conecte suas contas/ })).toBeVisible();
   await openDemo(page);
-  await expect(page.getByText("Modo demonstração.", { exact: false }).first()).toBeVisible();
-  const kpis = page.getByRole("region", { name: "Indicadores principais" });
-  for (const l of ["ROAS", "Compras", "Receita atribuída", "Investimento"]) await expect(kpis.getByText(l, { exact: true })).toBeVisible();
+  await expect(page.getByText("Modo demonstração:", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Resumo" }).getByText("ROAS", { exact: true })).toBeVisible();
+  const kpis = page.getByRole("region", { name: "Indicadores" });
+  for (const l of ["Vendas", "Receita atribuída", "Investimento", "Custo por venda"]) await expect(kpis.getByText(l, { exact: true })).toBeVisible();
+  // Recomendações priorizadas aparecem na visão geral, com acesso à lista completa
+  await expect(page.getByRole("heading", { name: "O que merece atenção" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Ver todas/ })).toBeVisible();
+  // Status da recomendação é persistido por workspace
+  await page.getByRole("button", { name: "Marcar como revisada" }).first().click();
+  const recsUrl = page.url().replace("visao-geral", "recomendacoes");
+  await expect(async () => {
+    await page.goto(recsUrl);
+    await expect(page.getByRole("tab", { name: /Revisadas\s*1/ })).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
   // Filtros globais vão para a URL e persistem entre telas
   await page.getByRole("button", { name: "Período" }).click();
   await page.getByRole("option", { name: "Últimos 7 dias" }).click();
   await page.waitForURL(/periodo=7d/);
-  await page.getByRole("link", { name: "Campanhas" }).click();
+  await page.getByRole("navigation", { name: "Principal" }).getByRole("link", { name: "Campanhas" }).click();
   await page.waitForURL(/campanhas\?.*periodo=7d/);
   await expect(page.getByRole("table")).toBeVisible();
 });
@@ -76,7 +87,7 @@ test("recuperação de senha: link de uso único redefine e encerra sessões", a
   await expect(anon.getByRole("heading", { name: "Verifique seu e-mail" })).toBeVisible();
   // Em desenvolvimento, sem SMTP, o e-mail fica no outbox; lemos o link direto do banco de teste.
   const { execSync } = await import("node:child_process");
-  const body = execSync(`psql -h localhost -U postgres painel -Atc "select body from mail_outbox where \\"to\\"='${email}' order by created_at desc limit 1"`).toString();
+  const body = execSync(`PGPASSWORD=postgres psql -h localhost -U postgres painel -Atc "select body from mail_outbox where \\"to\\"='${email}' order by created_at desc limit 1"`).toString();
   const link = body.match(/https?:\/\/\S+/)![0];
   await anon.goto(link);
   await anon.waitForURL(/redefinir-senha\?token=/);

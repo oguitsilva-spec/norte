@@ -469,6 +469,24 @@ export const funnels = pgTable(
   (t) => [index("funnels_ws_idx").on(t.workspaceId, t.adAccountId)],
 );
 
+/**
+ * Status de cada recomendação por workspace e conta. A chave é estável
+ * (regra + entidade); sem linha = "nova". Nunca altera campanhas na Meta.
+ */
+export const recommendationStates = pgTable(
+  "recommendation_states",
+  {
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+    adAccountId: uuid("ad_account_id").notNull().references(() => adAccounts.id, { onDelete: "cascade" }),
+    recKey: text("rec_key").notNull(),
+    status: text("status").$type<"reviewed" | "dismissed" | "snoozed">().notNull(),
+    snoozedUntil: timestamp("snoozed_until", { withTimezone: true }),
+    updatedBy: text("updated_by").references(() => user.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.workspaceId, t.adAccountId, t.recKey] })],
+);
+
 /* ------------------------------------------------------------------ */
 /* Sincronização                                                       */
 /* ------------------------------------------------------------------ */

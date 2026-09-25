@@ -5,7 +5,7 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
-import { ChartLineUp, Stack, ImageSquare, Funnel, Plugs, GearSix, List, X, CaretUpDown, Check, Flask, SignOut, BookOpenText, CircleNotch } from "@phosphor-icons/react";
+import { ChartLineUp, Stack, ImageSquare, Funnel, Plugs, GearSix, List, X, CaretUpDown, Check, Flask, SignOut, BookOpenText, CircleNotch, Lightbulb } from "@phosphor-icons/react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "./theme-toggle";
 import { cn } from "@/lib/cn";
@@ -16,6 +16,7 @@ type WS = { id: string; name: string; isDemo: boolean; role: string };
 
 const NAV = [
   { href: "visao-geral", label: "Visão geral", icon: ChartLineUp },
+  { href: "recomendacoes", label: "Recomendações", icon: Lightbulb },
   { href: "campanhas", label: "Campanhas", icon: Stack },
   { href: "criativos", label: "Criativos", icon: ImageSquare },
   { href: "funis", label: "Funis", icon: Funnel },

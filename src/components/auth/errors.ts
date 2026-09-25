@@ -1,4 +1,5 @@
-export function authErrorMessage(code?: string | null, fallback?: string | null): string {
+export function authErrorMessage(code?: string | null, fallback?: string | null, status?: number): string {
+  if (status === 429) return "Muitas tentativas. Aguarde um minuto e tente novamente.";
   switch (code) {
     case "USER_ALREADY_EXISTS":
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
@@ -16,6 +17,7 @@ export function authErrorMessage(code?: string | null, fallback?: string | null)
     case "TOO_MANY_REQUESTS":
       return "Muitas tentativas. Aguarde um minuto e tente novamente.";
     default:
-      return fallback && !/[a-z]{3,}_[a-z]/i.test(fallback) ? "Não foi possível concluir. Tente novamente." : "Não foi possível concluir. Tente novamente.";
+      // Mostra um código curto para facilitar o suporte, sem expor detalhes internos.
+      return `Não foi possível concluir. Tente novamente.${code ? ` (código: ${code})` : status ? ` (erro ${status})` : ""}`;
   }
 }

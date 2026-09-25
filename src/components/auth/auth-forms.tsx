@@ -52,7 +52,7 @@ export function SignInForm() {
           const { error } = await authClient.signIn.email({ email: String(fd.get("email")), password: String(fd.get("password")) });
           if (error) {
             s.setPending(false);
-            s.setError(authErrorMessage(error.code, error.message));
+            s.setError(authErrorMessage(error.code, error.message, error.status));
             return;
           }
           router.replace(safeNext);
@@ -101,7 +101,7 @@ export function SignUpForm() {
           const { error } = await authClient.signUp.email({ name: String(fd.get("name")).trim(), email: String(fd.get("email")).trim(), password });
           if (error) {
             s.setPending(false);
-            s.setError(authErrorMessage(error.code, error.message));
+            s.setError(authErrorMessage(error.code, error.message, error.status));
             return;
           }
           router.replace("/app?bem-vindo=1");
@@ -202,7 +202,7 @@ export function ResetForm() {
           const { error } = await authClient.resetPassword({ newPassword: a, token });
           if (error) {
             s.setPending(false);
-            return s.setError(authErrorMessage(error.code, error.message));
+            return s.setError(authErrorMessage(error.code, error.message, error.status));
           }
           router.replace("/entrar?senha=redefinida");
         }}

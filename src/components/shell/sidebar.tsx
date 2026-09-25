@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
-import { ChartLineUp, Stack, ImageSquare, Funnel, Plugs, GearSix, List, X, CaretUpDown, Check, Flask, SignOut, BookOpenText } from "@phosphor-icons/react";
+import { ChartLineUp, Stack, ImageSquare, Funnel, Plugs, GearSix, List, X, CaretUpDown, Check, Flask, SignOut, BookOpenText, CircleNotch } from "@phosphor-icons/react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "./theme-toggle";
 import { cn } from "@/lib/cn";
 import { authClient } from "@/lib/auth-client";
-import { switchWorkspaceAction, createDemoAction } from "@/server/actions/workspace";
+import { createDemoAction } from "@/server/actions/workspace";
 
 type WS = { id: string; name: string; isDemo: boolean; role: string };
 
@@ -62,6 +62,8 @@ function NavLinks({ ws, onNavigate }: { ws: string; onNavigate?: () => void }) {
 }
 
 function WorkspaceSwitcher({ current, workspaces }: { current: WS; workspaces: WS[] }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
   return (
     <Dropdown.Root>
       <Dropdown.Trigger className="flex w-full items-center gap-2.5 rounded-[10px] border border-line bg-surface px-2.5 py-2 text-left transition-colors hover:border-line-strong">
@@ -72,31 +74,34 @@ function WorkspaceSwitcher({ current, workspaces }: { current: WS; workspaces: W
           <span className="block truncate text-[13.5px] font-medium text-ink">{current.name}</span>
           <span className="block text-[12px] text-ink-3">{current.isDemo ? "Demonstração" : ROLE_LABEL[current.role]}</span>
         </span>
-        <CaretUpDown size={14} className="text-ink-3" />
+        {pending ? <CircleNotch size={14} className="animate-spin text-ink-3" /> : <CaretUpDown size={14} className="text-ink-3" />}
       </Dropdown.Trigger>
       <Dropdown.Portal>
         <Dropdown.Content align="start" sideOffset={6} className="z-50 w-[260px] rounded-[12px] border border-line bg-surface p-1.5 shadow-pop">
           <Dropdown.Label className="px-2 pb-1 pt-1.5 text-[12px] font-medium text-ink-3">Workspaces</Dropdown.Label>
           {workspaces.map((w) => (
-            <form key={w.id} action={switchWorkspaceAction}>
-              <input type="hidden" name="workspaceId" value={w.id} />
-              <Dropdown.Item asChild>
-                <button type="submit" className="flex w-full items-center gap-2 rounded-[8px] px-2 py-2 text-left text-[13.5px] text-ink outline-none data-[highlighted]:bg-surface-2">
-                  <span className="min-w-0 flex-1 truncate">{w.name}</span>
-                  {w.isDemo ? <span className="text-[11.5px] text-warn">demo</span> : null}
-                  {w.id === current.id ? <Check size={16} weight="bold" className="text-accent-text" /> : null}
-                </button>
-              </Dropdown.Item>
-            </form>
+            <Dropdown.Item
+              key={w.id}
+              disabled={pending}
+              // Navega direto: o layout do workspace valida o acesso e grava a escolha.
+              onSelect={() => {
+                if (w.id !== current.id) start(() => router.push(`/w/${w.id}/visao-geral`));
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-[8px] px-2 py-2 text-left text-[13.5px] text-ink outline-none data-[highlighted]:bg-surface-2"
+            >
+              <span className="min-w-0 flex-1 truncate">{w.name}</span>
+              {w.isDemo ? <span className="text-[11.5px] text-warn">demo</span> : null}
+              {w.id === current.id ? <Check size={16} weight="bold" className="text-accent-text" /> : null}
+            </Dropdown.Item>
           ))}
           <Dropdown.Separator className="my-1 h-px bg-line" />
-          <form action={createDemoAction}>
-            <Dropdown.Item asChild>
-              <button type="submit" className="flex w-full items-center gap-2 rounded-[8px] px-2 py-2 text-left text-[13.5px] text-ink-2 outline-none data-[highlighted]:bg-surface-2">
-                <Flask size={16} /> Novo workspace de demonstração
-              </button>
-            </Dropdown.Item>
-          </form>
+          <Dropdown.Item
+            disabled={pending}
+            onSelect={() => start(() => createDemoAction())}
+            className="flex w-full cursor-pointer items-center gap-2 rounded-[8px] px-2 py-2 text-left text-[13.5px] text-ink-2 outline-none data-[highlighted]:bg-surface-2"
+          >
+            <Flask size={16} /> Novo workspace de demonstração
+          </Dropdown.Item>
         </Dropdown.Content>
       </Dropdown.Portal>
     </Dropdown.Root>

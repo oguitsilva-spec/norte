@@ -222,7 +222,7 @@ export async function runAccountSync(data: SyncJobData, cfg: MetaAppConfig, sett
     const err = e instanceof MetaApiError ? e : null;
     const message = err ? userMessageFor(err) : "Erro interno durante a sincronização.";
     const code = err ? `meta_${err.kind}${err.code ? `_${err.code}` : ""}${err.subcode ? `_${err.subcode}` : ""}` : "internal_error";
-    log.error("sync_failed", { adAccountId: account.id, code, detail: redactString(String((e as Error)?.message ?? e)) });
+    log.error("sync_failed", { adAccountId: account.id, errorCode: code, detail: redactString(String((e as Error)?.message ?? e)) });
 
     await db
       .update(schema.syncJobs)

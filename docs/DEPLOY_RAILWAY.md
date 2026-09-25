@@ -6,9 +6,9 @@ O app tem três peças: **web** (Next.js), **worker** (sincronização em segund
 Suba esta pasta para um repositório no GitHub (privado, de preferência). O arquivo `.env` não vai junto (está no `.gitignore`), e é assim que deve ser.
 
 ## 2. Criar o projeto
-1. No Railway: **New Project → Deploy from GitHub repo** → escolha o repositório. Esse primeiro serviço será o **web**; ele usa o `railway.json` da raiz automaticamente (build `npm run build`, migrações antes de cada deploy, start `npm start`, checagem em `/api/health`).
+1. No Railway: **New Project → Deploy from GitHub repo** → escolha o repositório. Esse primeiro serviço será o **web**; ele usa o `railway.json` da raiz automaticamente (build `npm run build`, start `node scripts/railway-start.mjs`, checagem em `/api/health`). No web, esse comando aplica as migrações (com limite de 2 minutos) e depois inicia o site.
 2. **New → Database → PostgreSQL** no mesmo projeto.
-3. **New → GitHub repo** de novo (mesmo repositório) para criar o **worker**. Nas configurações do serviço, no campo de arquivo de configuração (config-as-code), informe o caminho `/railway.worker.json` (start `npm run worker`, reinício automático).
+3. **New → GitHub repo** de novo (mesmo repositório) para criar o **worker** e dê a ele um nome que contenha `worker`. Ele usa o mesmo `railway.json`: o comando de início detecta o nome do serviço (ou a variável `SERVICE_ROLE=worker`) e roda `npm run worker`. Não preencha Custom Start Command nem caminho de config nos serviços.
 4. No serviço **web**, em *Settings → Networking*, gere um domínio público (**Generate Domain**). Anote o endereço `https://….up.railway.app`.
 
 ## 3. Variáveis (Settings → Variables), nos DOIS serviços

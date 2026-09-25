@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 import { CheckCircle, CircleNotch, Circle, WarningCircle } from "@phosphor-icons/react";
 
-type Status = { progress: number | null; syncStatus: string; initialDone: boolean; error: string | null; lastRun: { status: string } | null };
+type Status = {
+  progress: number | null;
+  syncStatus: string;
+  initialDone: boolean;
+  error: string | null;
+  errorCode?: string | null;
+  lastRun: { status: string; createdAt?: string } | null;
+};
 
 const STEPS = [
   { at: 0.05, label: "Conta e moeda confirmadas" },
@@ -40,11 +47,21 @@ export function FirstSyncProgress({ ws, accountId }: { ws: string; accountId: st
   }, [ws, accountId, router]);
 
   const p = s?.progress ?? 0;
-  const failed = s?.lastRun?.status === "failed" && !s.initialDone;
+  const runStatus = s?.lastRun?.status;
+  // Após uma falha temporária a execução volta para a fila (nova tentativa); o erro continua visível.
+  const failed = Boolean(s && !s.initialDone && s.error && runStatus !== "running");
+  const retrying = failed && runStatus === "queued";
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, []);
+  const queuedMin = runStatus === "queued" && s?.lastRun?.createdAt ? (now - new Date(s.lastRun.createdAt).getTime()) / 60_000 : 0;
+  const stuck = !failed && runStatus === "queued" && queuedMin >= 3;
   return (
     <div className="mt-4 w-full rounded-[14px] border border-line bg-surface p-5 shadow-card">
       <div className="flex items-center justify-between text-[13px]">
-        <span className="font-medium text-ink">{failed ? "Tentativa com erro" : s?.lastRun?.status === "queued" || !s ? "Na fila" : "Sincronizando"}</span>
+        <span className="font-medium text-ink">{retrying ? "Nova tentativa agendada" : failed ? "Tentativa com erro" : runStatus === "queued" || !s ? "Na fila" : "Sincronizando"}</span>
         <span className="text-ink-2 tnum">{Math.round(p * 100)}%</span>
       </div>
       <div className="mt-2 h-2 w-full overflow-hidden rounded-[4px] bg-accent-soft" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(p * 100)} aria-label="Progresso da primeira sincronização">
@@ -64,7 +81,17 @@ export function FirstSyncProgress({ ws, accountId }: { ws: string; accountId: st
       </ul>
       {failed && s?.error ? (
         <p className="mt-4 flex gap-2 rounded-[10px] bg-warn-soft px-3 py-2.5 text-[13px] text-ink">
-          <WarningCircle size={18} weight="fill" className="shrink-0 text-warn" /> {s.error}
+          <WarningCircle size={18} weight="fill" className="shrink-0 text-warn" />
+          <span>
+            {s.error}
+            {s.errorCode ? <span className="text-ink-3"> (código: {s.errorCode})</span> : null}
+          </span>
+        </p>
+      ) : null}
+      {stuck ? (
+        <p className="mt-4 flex gap-2 rounded-[10px] bg-surface-2 px-3 py-2.5 text-[13px] text-ink-2">
+          <WarningCircle size={18} weight="fill" className="shrink-0 text-ink-3" />
+          Na fila há {Math.floor(queuedMin)} minutos sem começar. O processo de sincronização (worker) pode estar parado; verifique se ele está ativo na hospedagem.
         </p>
       ) : null}
     </div>

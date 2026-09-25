@@ -30,6 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ ws: 
         initialDone: Boolean(a.initialSyncCompletedAt),
         lastRun: run ?? null,
         error: a.lastErrorMessage,
+        errorCode: a.lastErrorCode,
       });
     }
     return NextResponse.json({ accounts: out }, { headers: { "cache-control": "no-store" } });

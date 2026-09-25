@@ -178,7 +178,7 @@ export async function handleMetaCallback(
   } catch (e) {
     const code = e instanceof MetaApiError ? `${e.kind}_${e.code ?? "x"}${e.subcode ? `_${e.subcode}` : ""}` : "interno";
     // As mensagens da Meta já passam por redação de tokens no cliente.
-    log.error("meta_callback_failed", { workspaceId, step, code, message: String((e as Error)?.message ?? e).slice(0, 300) });
+    log.error("meta_callback_failed", { workspaceId, step, errorCode: code, message: String((e as Error)?.message ?? e).slice(0, 300) });
     return { ok: false, workspaceId, error: "exchange_failed", detail: `${step}:${code}` };
   }
 }

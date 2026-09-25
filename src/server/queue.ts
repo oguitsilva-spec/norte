@@ -55,3 +55,13 @@ export async function stopBoss() {
   g.__norteBoss = undefined;
   await b?.stop({ graceful: true, timeout: 20_000 } as never);
 }
+
+/**
+ * O job da fila ainda vai rodar? (criado, aguardando nova tentativa ou ativo).
+ * Usado para liberar execuções "na fila" cujo job já terminou ou sumiu.
+ */
+export async function isSyncJobPending(boss: PgBoss, jobId: string | null | undefined) {
+  if (!jobId) return false;
+  const job = await boss.getJobById(SYNC_QUEUE, jobId).catch(() => null);
+  return Boolean(job && ["created", "retry", "active"].includes(String((job as { state?: string }).state)));
+}

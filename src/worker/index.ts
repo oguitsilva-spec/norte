@@ -2,7 +2,7 @@ import "dotenv/config";
 import { eq, and, lte, isNotNull, ne } from "drizzle-orm";
 import { getBoss, stopBoss, SYNC_QUEUE, SCHEDULER_QUEUE, HEALTH_QUEUE, type SyncJobData } from "@/server/queue";
 import { runAccountSync, RetryableSyncError } from "@/server/sync/runner";
-import { scheduleDueSyncs } from "@/server/sync/enqueue";
+import { scheduleDueSyncs, recoverOrphanedRuns } from "@/server/sync/enqueue";
 import { metaAppConfig, checkConnectionHealth } from "@/server/providers/meta/connection";
 import { getDb, schema, closeDb } from "@/server/db";
 import { log } from "@/server/security/redact";
@@ -61,6 +61,12 @@ async function main() {
       .set({ status: "expired", lastErrorMessage: "A autorização da Meta expirou. Reconecte.", updatedAt: new Date() })
       .where(and(eq(schema.providerConnections.status, "active"), lte(schema.providerConnections.tokenExpiresAt, new Date())));
   });
+
+  const recovered = await recoverOrphanedRuns().catch((e) => {
+    log.error("recover_failed", { detail: String((e as Error)?.message ?? e) });
+    return 0;
+  });
+  if (recovered) log.info("orphaned_runs_recovered", { count: recovered });
 
   log.info("worker_started", { queues: [SYNC_QUEUE, SCHEDULER_QUEUE, HEALTH_QUEUE] });
   const shutdown = async () => {

@@ -1,0 +1,223 @@
+@import "tailwindcss";
+
+/*
+ * Norte — sistema visual
+ * - Neutros quentes-neutros (papel levemente frio), 1 acento: cobalto.
+ * - Raio: superfícies 14px, controles 10px, selos em pílula. Sem exceções.
+ * - Cores de série seguem a paleta validada de dataviz (ordem fixa);
+ *   cores de status são reservadas e sempre acompanham ícone + texto.
+ * - Tema: claro, escuro ou automático (prefers-color-scheme), por tokens.
+ */
+
+:root {
+  color-scheme: light;
+  --page: #f6f6f4;
+  --surface: #fcfcfb;
+  --surface-2: #f1f1ee;
+  --surface-sunken: #ececE8;
+  --ink: #111110;
+  --ink-2: #52514e;
+  --ink-3: #74726c;
+  --line: #e4e3dd;
+  --line-strong: #cfcec6;
+  --grid: #e8e7e1;
+  --axis: #c3c2b7;
+
+  --accent: #1c5cab;
+  --accent-hover: #184f95;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6effa;
+  --accent-text: #1c5cab;
+
+  --series-1: #2a78d6; /* azul — receita / série principal */
+  --series-2: #eb6834; /* laranja — investimento */
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-prev: #b9b8b0; /* período anterior (de-ênfase) */
+
+  --good: #0a7a0a;
+  --good-soft: #e7f4e6;
+  --warn: #8a5a00;
+  --warn-soft: #fbf1dc;
+  --serious: #b0461d;
+  --serious-soft: #fbeae2;
+  --critical: #b42d2d;
+  --critical-soft: #fbe7e7;
+  --info-soft: #e9eef6;
+
+  --shadow-card: 0 1px 0 rgba(17, 17, 16, 0.03), 0 1px 2px rgba(17, 17, 16, 0.04);
+  --shadow-pop: 0 12px 32px -8px rgba(28, 40, 60, 0.18), 0 2px 6px rgba(28, 40, 60, 0.06);
+  --ring: 0 0 0 3px rgba(28, 92, 171, 0.28);
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2374726c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0f0f0e;
+    --surface: #1a1a19;
+    --surface-2: #222220;
+    --surface-sunken: #141413;
+    --ink: #f4f3ef;
+    --ink-2: #c3c2b7;
+    --ink-3: #9a988f;
+    --line: #2c2c2a;
+    --line-strong: #3a3a37;
+    --grid: #2a2a28;
+    --axis: #3d3d3a;
+    --accent: #3987e5;
+    --accent-hover: #5598e7;
+    --accent-ink: #0b1628;
+    --accent-soft: #16263d;
+    --accent-text: #86b6ef;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-prev: #55544f;
+    --good: #3cc23c;
+    --good-soft: #14261a;
+    --warn: #f0b429;
+    --warn-soft: #2b2312;
+    --serious: #ef9a78;
+    --serious-soft: #2e1c15;
+    --critical: #f07474;
+    --critical-soft: #2e1717;
+    --info-soft: #1a2230;
+    --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.3);
+    --shadow-pop: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+    --ring: 0 0 0 3px rgba(57, 135, 229, 0.35);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0f0f0e;
+  --surface: #1a1a19;
+  --surface-2: #222220;
+  --surface-sunken: #141413;
+  --ink: #f4f3ef;
+  --ink-2: #c3c2b7;
+  --ink-3: #9a988f;
+  --line: #2c2c2a;
+  --line-strong: #3a3a37;
+  --grid: #2a2a28;
+  --axis: #3d3d3a;
+  --accent: #3987e5;
+  --accent-hover: #5598e7;
+  --accent-ink: #0b1628;
+  --accent-soft: #16263d;
+  --accent-text: #86b6ef;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-prev: #55544f;
+  --good: #3cc23c;
+  --good-soft: #14261a;
+  --warn: #f0b429;
+  --warn-soft: #2b2312;
+  --serious: #ef9a78;
+  --serious-soft: #2e1c15;
+  --critical: #f07474;
+  --critical-soft: #2e1717;
+  --info-soft: #1a2230;
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --ring: 0 0 0 3px rgba(57, 135, 229, 0.35);
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-sunken: var(--surface-sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-serious: var(--serious);
+  --color-serious-soft: var(--serious-soft);
+  --color-critical: var(--critical);
+  --color-critical-soft: var(--critical-soft);
+  --color-info-soft: var(--info-soft);
+  --color-s1: var(--series-1);
+  --color-s2: var(--series-2);
+  --color-s3: var(--series-3);
+  --color-s4: var(--series-4);
+  --color-sprev: var(--series-prev);
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+  --radius-card: 14px;
+  --radius-ctl: 10px;
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+}
+
+html,
+body {
+  background: var(--page);
+  color: var(--ink);
+}
+
+body {
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 8px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Esqueletos de carregamento: brilho suave, desligado em movimento reduzido */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-sunken) 40%, var(--surface-2) 80%);
+  background-size: 300% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Recharts: remove contorno de foco padrão do SVG */
+.recharts-wrapper svg:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}

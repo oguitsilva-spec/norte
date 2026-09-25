@@ -190,13 +190,30 @@ export const CAMPAIGN_STATUSES = ["ACTIVE", "PAUSED", "ARCHIVED", "IN_PROCESS", 
 export const ADSET_STATUSES = ["ACTIVE", "PAUSED", "CAMPAIGN_PAUSED", "ARCHIVED", "IN_PROCESS", "WITH_ISSUES"];
 export const AD_STATUSES = ["ACTIVE", "PAUSED", "CAMPAIGN_PAUSED", "ADSET_PAUSED", "ARCHIVED", "IN_PROCESS", "WITH_ISSUES", "PENDING_REVIEW", "DISAPPROVED", "PREAPPROVED", "PENDING_BILLING_INFO"];
 
-/** Lista com filtro de status; se a Meta recusar o filtro (#100), repete sem ele (padrão: não arquivados). */
-async function listWithStatusFallback<T>(c: MetaClient, path: string, params: Record<string, unknown>, statuses: string[]) {
-  try {
-    return await c.getAll<T>(path, { ...params, effective_status: statuses });
-  } catch (e) {
-    if (e instanceof MetaApiError && e.kind === "invalid_request") return c.getAll<T>(path, params);
-    throw e;
+/**
+ * Lista com filtro de status. Dois ajustes automáticos para contas reais:
+ *  - se a Meta recusar o filtro (#100), repete sem ele (padrão: não arquivados);
+ *  - se a Meta falhar com código 1 (resposta pesada demais / "unknown error"),
+ *    repete com páginas menores, até 25 itens por página.
+ */
+async function listWithStatusFallback<T>(c: MetaClient, path: string, params: Record<string, unknown>, statuses: string[], limit = 200) {
+  let useStatus = true;
+  let pageSize = limit;
+  while (true) {
+    try {
+      return await c.getAll<T>(path, { ...params, limit: pageSize, ...(useStatus ? { effective_status: statuses } : {}) });
+    } catch (e) {
+      if (!(e instanceof MetaApiError)) throw e;
+      if (e.kind === "invalid_request" && useStatus) {
+        useStatus = false;
+        continue;
+      }
+      if (e.code === 1 && pageSize > 25) {
+        pageSize = Math.max(25, Math.floor(pageSize / 4));
+        continue;
+      }
+      throw e;
+    }
   }
 }
 
@@ -212,9 +229,10 @@ export async function listAds(c: MetaClient, actId: string) {
     `${actId}/ads`,
     {
       fields:
-        "id,name,adset_id,campaign_id,status,effective_status,preview_shareable_link,creative{id,thumbnail_url,image_url,object_type,title,body,video_id,instagram_permalink_url,object_story_spec}",
+        "id,name,adset_id,campaign_id,status,effective_status,preview_shareable_link,creative{id,thumbnail_url,image_url,object_type,title,body,video_id,instagram_permalink_url,object_story_spec{link_data{link},video_data{call_to_action}}}",
     },
     AD_STATUSES,
+    100,
   );
 }
 
@@ -248,14 +266,20 @@ export const DAILY_AD_FIELDS = "ad_id,adset_id,campaign_id,spend,impressions,inl
 export const ATTRIBUTION_PARAMS = { use_unified_attribution_setting: "true", action_report_time: "impression" } as const;
 
 export async function fetchDailyAdInsightsSync(c: MetaClient, actId: string, since: string, until: string) {
-  return c.getAll<MetaInsightRow>(`${actId}/insights`, {
-    level: "ad",
-    time_increment: 1,
-    time_range: { since, until },
-    fields: DAILY_AD_FIELDS,
-    ...ATTRIBUTION_PARAMS,
-    limit: 500,
-  });
+  try {
+    return await c.getAll<MetaInsightRow>(`${actId}/insights`, {
+      level: "ad",
+      time_increment: 1,
+      time_range: { since, until },
+      fields: DAILY_AD_FIELDS,
+      ...ATTRIBUTION_PARAMS,
+      limit: 500,
+    });
+  } catch (e) {
+    // Código 1 = consulta pesada demais para o modo síncrono: usa o relatório assíncrono.
+    if (e instanceof MetaApiError && e.code === 1) return fetchDailyAdInsightsAsync(c, actId, since, until);
+    throw e;
+  }
 }
 
 /** Relatório assíncrono (para janelas grandes): POST → polling → leitura paginada. */

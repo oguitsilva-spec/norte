@@ -71,7 +71,9 @@ export default async function ConnectionsPage({ params, searchParams }: { params
     .where(and(eq(schema.syncRuns.workspaceId, ctx.workspaceId)))
     .orderBy(desc(schema.syncRuns.createdAt))
     .limit(25);
-  const err = typeof sp.erro === "string" ? ERRORS[sp.erro] : null;
+  const errBase = typeof sp.erro === "string" ? ERRORS[sp.erro] : null;
+  const errDetail = typeof sp.detalhe === "string" ? sp.detalhe.replace(/[^a-z0-9_:,]/gi, "").slice(0, 80) : "";
+  const err = errBase ? (errDetail ? `${errBase} (código: ${errDetail})` : errBase) : null;
   const selected = accounts.filter((a) => a.isSelected);
   const tzUser = selected[0]?.timezoneName ?? "America/Sao_Paulo";
 

@@ -98,19 +98,27 @@ export async function handleMetaCallback(
   const workspaceId = st.workspaceId;
   if (params.error || !params.code) return { ok: false, workspaceId, error: "cancelled", detail: params.errorReason ?? params.error ?? undefined };
 
+  // Etapa atual: aparece no log e na tela (sem dados sensíveis) para diagnóstico.
+  let step = "troca_code";
   try {
     const exchanged = await exchangeCodeForToken(cfg, params.code, metaRedirectUri());
     let token = exchanged.access_token;
+    step = "debug_token";
     let info = await debugToken(cfg, token);
-    if (!info.is_valid || (info.app_id && info.app_id !== cfg.appId)) return { ok: false, workspaceId, error: "exchange_failed", detail: "token_invalid" };
+    if (!info.is_valid || (info.app_id && info.app_id !== cfg.appId)) {
+      log.error("meta_callback_failed", { workspaceId, step, err: "token_invalid", tokenAppMatches: info.app_id === cfg.appId, valid: info.is_valid });
+      return { ok: false, workspaceId, error: "exchange_failed", detail: "debug_token:token_invalid" };
+    }
 
     // Token de usuário: troca por um de longa duração (~60 dias). Não existe refresh token.
     const tokenType = (info.type ?? "USER").toUpperCase() === "SYSTEM_USER" ? "system_user" : "user";
     if (tokenType === "user") {
+      step = "longa_duracao";
       const ll = await exchangeForLongLivedUserToken(cfg, token);
       token = ll.access_token;
       info = await debugToken(cfg, token);
     }
+    step = "perfil";
     const c = client(cfg, token);
     const me = await getMe(c);
     let granted = info.scopes ?? [];
@@ -124,6 +132,7 @@ export async function handleMetaCallback(
     }
     const missing = REQUIRED_SCOPES.filter((s) => !granted.includes(s));
 
+    step = "salvar";
     const db = getDb();
     const expiresAt = info.expires_at && info.expires_at > 0 ? new Date(info.expires_at * 1000) : null;
     const dataAccessExpiresAt = info.data_access_expires_at ? new Date(info.data_access_expires_at * 1000) : null;
@@ -162,12 +171,15 @@ export async function handleMetaCallback(
 
     if (missing.length) return { ok: false, workspaceId, error: "missing_permission", detail: missing.join(",") };
 
+    step = "listar_contas";
     const found = await discoverAdAccounts(cfg, workspaceId, connectionId, token);
     log.info("meta_connected", { workspaceId, connectionId, tokenType, accounts: found });
     return { ok: true, workspaceId, connectionId, accountsFound: found };
   } catch (e) {
-    log.error("meta_callback_failed", { workspaceId, err: e instanceof MetaApiError ? `${e.kind}:${e.code}` : String((e as Error)?.message) });
-    return { ok: false, workspaceId, error: "exchange_failed" };
+    const code = e instanceof MetaApiError ? `${e.kind}_${e.code ?? "x"}${e.subcode ? `_${e.subcode}` : ""}` : "interno";
+    // As mensagens da Meta já passam por redação de tokens no cliente.
+    log.error("meta_callback_failed", { workspaceId, step, code, message: String((e as Error)?.message ?? e).slice(0, 300) });
+    return { ok: false, workspaceId, error: "exchange_failed", detail: `${step}:${code}` };
   }
 }
 

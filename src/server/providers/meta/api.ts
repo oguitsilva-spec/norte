@@ -100,6 +100,7 @@ export type MetaAdAccount = {
 };
 
 export const AD_ACCOUNT_FIELDS = "id,account_id,name,currency,timezone_name,account_status,business{id,name}";
+export const AD_ACCOUNT_FIELDS_BASIC = "id,account_id,name,currency,timezone_name,account_status";
 
 export function client(cfg: MetaAppConfig, token: string, onCall?: () => void) {
   return new MetaClient({ accessToken: token, appSecret: cfg.appSecret, version: cfg.version, fetchImpl: cfg.fetchImpl, onCall });
@@ -118,7 +119,14 @@ export async function getGrantedPermissions(c: MetaClient) {
 }
 
 export async function listAdAccounts(c: MetaClient): Promise<MetaAdAccount[]> {
-  return c.getAll<MetaAdAccount>("me/adaccounts", { fields: AD_ACCOUNT_FIELDS, limit: 200 });
+  try {
+    return await c.getAll<MetaAdAccount>("me/adaccounts", { fields: AD_ACCOUNT_FIELDS, limit: 200 });
+  } catch (e) {
+    // O campo business pode exigir business_management; sem ele, lista sem o nome da empresa.
+    if (e instanceof MetaApiError && (e.kind === "permission" || e.kind === "invalid_request"))
+      return c.getAll<MetaAdAccount>("me/adaccounts", { fields: AD_ACCOUNT_FIELDS_BASIC, limit: 200 });
+    throw e;
+  }
 }
 
 export async function getAdAccount(c: MetaClient, actId: string): Promise<MetaAdAccount> {

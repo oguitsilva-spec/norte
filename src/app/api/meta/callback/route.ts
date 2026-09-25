@@ -29,5 +29,6 @@ export async function GET(req: NextRequest) {
   };
   if (result.ok) return res(`/w/${result.workspaceId}/conexoes/meta/contas?conexao=${result.connectionId}`);
   if (!result.workspaceId) return res("/app?erro=estado_invalido");
-  return res(`/w/${result.workspaceId}/conexoes?erro=${result.error}`);
+  const det = result.detail ? `&detalhe=${encodeURIComponent(result.detail.replace(/[^a-z0-9_:,]/gi, "").slice(0, 80))}` : "";
+  return res(`/w/${result.workspaceId}/conexoes?erro=${result.error}${det}`);
 }

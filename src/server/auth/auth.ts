@@ -48,6 +48,9 @@ export const auth = betterAuth({
     },
   },
   advanced: {
+    // IP real do visitante atrás do proxy da hospedagem (Railway envia x-real-ip / x-forwarded-for),
+    // para o limite de tentativas ser por pessoa e não compartilhado por todos.
+    ipAddress: { ipAddressHeaders: (process.env.AUTH_IP_HEADERS ?? "x-real-ip,x-forwarded-for").split(",").map((h) => h.trim()).filter(Boolean) },
     useSecureCookies: process.env.NODE_ENV === "production",
     cookiePrefix: "norte",
   },

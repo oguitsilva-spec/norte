@@ -101,7 +101,8 @@ export class MetaClient {
       maxRetries: 4,
       maxInlineWaitMs: 30_000,
       sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
-      ...o,
+      // Opções passadas como undefined (ex.: fetchImpl ausente em produção) não podem apagar os padrões.
+      ...(Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as MetaClientOptions),
     };
   }
 

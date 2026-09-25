@@ -130,7 +130,12 @@ export async function listAdAccounts(c: MetaClient): Promise<MetaAdAccount[]> {
 }
 
 export async function getAdAccount(c: MetaClient, actId: string): Promise<MetaAdAccount> {
-  return c.get<MetaAdAccount>(actId, { fields: AD_ACCOUNT_FIELDS });
+  try {
+    return await c.get<MetaAdAccount>(actId, { fields: AD_ACCOUNT_FIELDS });
+  } catch (e) {
+    if (e instanceof MetaApiError && (e.kind === "permission" || e.kind === "invalid_request")) return c.get<MetaAdAccount>(actId, { fields: AD_ACCOUNT_FIELDS_BASIC });
+    throw e;
+  }
 }
 
 /** Revoga a autorização do app para o usuário (melhor esforço, ao desconectar). */
@@ -180,28 +185,37 @@ export type MetaAd = {
   };
 };
 
-const ALL_STATUSES = ["ACTIVE", "PAUSED", "ARCHIVED", "IN_PROCESS", "WITH_ISSUES", "CAMPAIGN_PAUSED", "ADSET_PAUSED", "PENDING_REVIEW", "DISAPPROVED", "PREAPPROVED", "PENDING_BILLING_INFO"];
+// Valores aceitos por nível (a Meta rejeita com #100 qualquer valor fora da lista daquele objeto).
+export const CAMPAIGN_STATUSES = ["ACTIVE", "PAUSED", "ARCHIVED", "IN_PROCESS", "WITH_ISSUES"];
+export const ADSET_STATUSES = ["ACTIVE", "PAUSED", "CAMPAIGN_PAUSED", "ARCHIVED", "IN_PROCESS", "WITH_ISSUES"];
+export const AD_STATUSES = ["ACTIVE", "PAUSED", "CAMPAIGN_PAUSED", "ADSET_PAUSED", "ARCHIVED", "IN_PROCESS", "WITH_ISSUES", "PENDING_REVIEW", "DISAPPROVED", "PREAPPROVED", "PENDING_BILLING_INFO"];
+
+/** Lista com filtro de status; se a Meta recusar o filtro (#100), repete sem ele (padrão: não arquivados). */
+async function listWithStatusFallback<T>(c: MetaClient, path: string, params: Record<string, unknown>, statuses: string[]) {
+  try {
+    return await c.getAll<T>(path, { ...params, effective_status: statuses });
+  } catch (e) {
+    if (e instanceof MetaApiError && e.kind === "invalid_request") return c.getAll<T>(path, params);
+    throw e;
+  }
+}
 
 export async function listCampaigns(c: MetaClient, actId: string) {
-  return c.getAll<MetaCampaign>(`${actId}/campaigns`, {
-    fields: "id,name,objective,status,effective_status,buying_type,daily_budget,lifetime_budget,created_time",
-    effective_status: ALL_STATUSES,
-  });
+  return listWithStatusFallback<MetaCampaign>(c, `${actId}/campaigns`, { fields: "id,name,objective,status,effective_status,buying_type,daily_budget,lifetime_budget,created_time" }, CAMPAIGN_STATUSES);
 }
 export async function listAdSets(c: MetaClient, actId: string) {
-  return c.getAll<MetaAdSet>(`${actId}/adsets`, {
-    fields: "id,name,campaign_id,status,effective_status,optimization_goal,destination_type,attribution_spec",
-    effective_status: ALL_STATUSES,
-  });
+  return listWithStatusFallback<MetaAdSet>(c, `${actId}/adsets`, { fields: "id,name,campaign_id,status,effective_status,optimization_goal,destination_type,attribution_spec" }, ADSET_STATUSES);
 }
 export async function listAds(c: MetaClient, actId: string) {
-  return c.getAll<MetaAd>(`${actId}/ads`, {
-    fields:
-      "id,name,adset_id,campaign_id,status,effective_status,preview_shareable_link,creative{id,thumbnail_url,image_url,object_type,title,body,video_id,instagram_permalink_url,object_story_spec}",
-    effective_status: ALL_STATUSES,
-    thumbnail_width: 480,
-    thumbnail_height: 480,
-  });
+  return listWithStatusFallback<MetaAd>(
+    c,
+    `${actId}/ads`,
+    {
+      fields:
+        "id,name,adset_id,campaign_id,status,effective_status,preview_shareable_link,creative{id,thumbnail_url,image_url,object_type,title,body,video_id,instagram_permalink_url,object_story_spec}",
+    },
+    AD_STATUSES,
+  );
 }
 
 /* ------------------------------------------------------------------ */

@@ -220,7 +220,9 @@ export async function runAccountSync(data: SyncJobData, cfg: MetaAppConfig, sett
     return { status: "succeeded", retry: false, rows: rowsUpserted, apiCalls };
   } catch (e) {
     const err = e instanceof MetaApiError ? e : null;
-    const message = err ? userMessageFor(err) : "Erro interno durante a sincronização.";
+    // Para erros de requisição, a mensagem original da Meta (já sem tokens) ajuda a diagnosticar.
+    const metaDetail = err && (err.kind === "invalid_request" || err.kind === "unknown") ? ` Detalhe da Meta: ${redactString(err.message).slice(0, 220)}` : "";
+    const message = (err ? userMessageFor(err) : "Erro interno durante a sincronização.") + metaDetail;
     const code = err ? `meta_${err.kind}${err.code ? `_${err.code}` : ""}${err.subcode ? `_${err.subcode}` : ""}` : "internal_error";
     log.error("sync_failed", { adAccountId: account.id, errorCode: code, detail: redactString(String((e as Error)?.message ?? e)) });
 
@@ -240,7 +242,7 @@ export async function runAccountSync(data: SyncJobData, cfg: MetaAppConfig, sett
       err?.kind === "permission" ? "permission_denied" : err?.kind === "auth" ? "error" : err?.retryable || !err ? (isInitial ? "initial_sync" : "ok") : "error";
     await db
       .update(schema.adAccounts)
-      .set({ syncStatus: nextStatus, syncProgress: null, lastErrorCode: code, lastErrorMessage: message, updatedAt: new Date() })
+      .set({ syncStatus: nextStatus, lastErrorCode: code, lastErrorMessage: message, updatedAt: new Date() })
       .where(eq(schema.adAccounts.id, account.id));
 
     const retry = Boolean(err?.retryable) || !err;
